@@ -1,8 +1,9 @@
 package document;
 
+import com.sun.tools.javac.util.Pair;
+
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -100,7 +101,11 @@ public class Document extends Glyph{
 		int x = (int)getBound().getX();
 		int y = (int)getBound().getY() + getRowsHeight(index);
 		Row row = new Row(g, x, y, maxWidth, margin);
-		children.add(index, row);
+		for (Iterator iter = children.listIterator(index); iter.hasNext();) {
+			Row r = (Row) iter.next();
+			r.setVerticalLocation(r.getBound().y + row.getBound().height);
+		}
+		super.add(index, row);
 		listener.documentChanged(this, new Pos(index, 0));
 		getBound().setSize((int)getBound().getWidth(), (int)getBound().getHeight() + g.getFontMetrics().getHeight());
 		return row;
@@ -113,7 +118,7 @@ public class Document extends Glyph{
 
 		for (Iterator iter = children.listIterator(index); iter.hasNext();) {
 			Row r = (Row) iter.next();
-			r.setVerticalLocation(r.getBound().y + row.getBound().width);
+			r.setVerticalLocation(r.getBound().y + row.getBound().height);
 		}
 		children.add(index, row);
 		listener.documentChanged(this, new Pos(index, 0));
@@ -153,11 +158,12 @@ public class Document extends Glyph{
 			if (pos.getRow() > 0) {
 				Row rowToInsert = getRow(pos.getRow() - 1);
 				Row rowToDelete = getRow(pos.getRow());
+				int origOffset = rowToInsert.getSize();
 				for (Glyph child : rowToDelete.children) {
 					rowToInsert.add((Chara) child);
 				}
 				removeRow(pos.getRow());
-				listener.documentChanged(this, new Pos(pos.getRow() - 1, getRow(pos.getRow() - 1).getSize()));
+				listener.documentChanged(this, new Pos(pos.getRow() - 1, origOffset));
 			}
 		}
 		else {
@@ -172,6 +178,28 @@ public class Document extends Glyph{
 	public void remove(Chara chara) {
 		Row row = (Row)chara.getParent();
 		remove(new Pos(children.indexOf(row), row.children.indexOf(chara) + 1));
+	}
+
+	public void remove_back(Pos pos){      //移除某位置后字符方法
+		Row row = getRow(pos.getRow());
+		if (pos.getRow() < (this.getSize()-1) && pos.getOffset() == row.getSize()){
+			Row next_row = getRow(pos.getRow() + 1);
+			if ( (pos.getRow() + 1) > 0) {
+				Row rowToInsert = row;
+				Row rowToDelete = next_row;
+				int origOffset =  rowToInsert.getSize();
+				for (Glyph child : rowToDelete.children) {
+					rowToInsert.add((Chara) child);
+				}
+
+				removeRow(rowToDelete);
+				listener.documentChanged(this, new Pos(pos.getRow(), origOffset));
+			}
+		}
+		else {
+			getRow(pos.getRow()).remove(pos.getOffset()+1);
+			listener.documentChanged(this, pos);
+		}
 	}
 
 	private void removeRow(int index) {
@@ -196,7 +224,7 @@ public class Document extends Glyph{
 	}
 
 	public void removeSelection(Selection sel) {
-		for (Glyph glyph : sel.items) {
+		for (Glyph glyph : sel.getItems()) {
 			if (glyph instanceof Row) {
 				removeRow((Row)glyph);
 			}
@@ -214,7 +242,7 @@ public class Document extends Glyph{
 			removeRow(nextRow);
 		}
 
-		listener.documentChanged(this, Pos.former(sel.p1, sel.p2));
+		listener.documentChanged(this, Pos.former(sel.getP1(), sel.getP2()));
 	}
 
 	public Selection getSelection(Pos p1, Pos p2) {
@@ -287,6 +315,37 @@ public class Document extends Glyph{
 			return true;
 		}
 		return false;
+	}
+
+	public ArrayList<Pair<Pos, Pos>> find(String str, Pos from, Pos to) {
+		ArrayList<Pair<Pos, Pos>> results = new ArrayList<Pair<Pos, Pos>>();
+		System.out.println("finding : " + from + " ->" + to);
+		if (from.rowDiff(to) == 0) {
+			ArrayList<Pair<Pos, Pos>> result = getRow(from.getRow()).find(str, from.getRow(), from.getOffset(), to.getOffset());
+			results.addAll(result);
+		}
+		else {
+			Row fromRow = getRow(from.getRow());
+			Row toRow = getRow(to.getRow());
+			results.addAll(fromRow.find(str, from.getRow(), from.getOffset(), fromRow.getSize()));
+			for (int i = from.getRow() + 1; i < to.getRow(); i++) {
+				results.addAll(getRow(i).find(str, i));
+			}
+			results.addAll(toRow.find(str, to.getRow(), 0, to.getOffset()));
+		}
+		return results;
+	}
+
+	public ArrayList<Pair<Pos, Pos>> find(String str) {
+		return find(str, new Pos(0, 0), this.end());
+	}
+
+	public Pos end() {
+		return new Pos(this.getSize() - 1, this.lastRow().getSize());
+	}
+
+	public Row lastRow() {
+		return (Row)this.getChildren().getLast();
 	}
 
 

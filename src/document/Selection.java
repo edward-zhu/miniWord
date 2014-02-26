@@ -1,33 +1,26 @@
 package document;
 
+import com.sun.tools.javac.util.Pair;
+
 import java.util.ArrayList;
 
 /**
  * Created by EdwardZhu on 14-2-23.
  */
 public class Selection {
-	ArrayList<Glyph> items;
-	Pos p1, p2;
+	final private ArrayList<Glyph> items;
+	final private Pair<Pos, Pos> p;
 
 	public Pos getP1() {
-		return p1;
-	}
-
-	public void setP1(Pos p1) {
-		this.p1 = p1;
+		return p.fst;
 	}
 
 	public Pos getP2() {
-		return p2;
-	}
-
-	public void setP2(Pos p2) {
-		this.p2 = p2;
+		return p.snd;
 	}
 
 	Selection (Pos p1, Pos p2, ArrayList<Glyph> items) {
-		this.p1 = p1;
-		this.p2 = p2;
+		this.p = new Pair<Pos, Pos>(p1, p2);
 		this.items = items;
 	}
 
@@ -38,6 +31,7 @@ public class Selection {
 	public int size() {
 		return items.size();
 	}
+
 
 
 

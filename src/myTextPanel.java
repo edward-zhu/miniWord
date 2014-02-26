@@ -1,12 +1,9 @@
-import com.sun.swing.internal.plaf.basic.resources.basic_de;
+import com.sun.tools.javac.util.Pair;
 import document.*;
 
 import javax.swing.*;
-import javax.swing.event.MenuKeyEvent;
-import javax.swing.event.MenuKeyListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.font.TextAttribute;
 import java.awt.font.TextHitInfo;
 import java.awt.im.InputMethodRequests;
 import java.text.AttributedCharacterIterator;
@@ -140,17 +137,13 @@ public class myTextPanel extends JPanel
 	 */
 	@Override
 	public void keyTyped(KeyEvent e) {
-		if (!e.isActionKey() && e.getKeyChar() != '\b' && e.getKeyChar() != '\n') {
-			// System.out.println("英文字符输入 + " + String.valueOf(e.getKeyCode()));
-			doc.addChara(this.getGraphics(), e.getKeyChar(), caret.getPos());
-			//repaint();
-		}
+
 	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {
 		int keyCode = e.getKeyCode();
-		if(keyCode == e.VK_BACK_SPACE) {
+		if(keyCode == KeyEvent.VK_BACK_SPACE) {
 			if (selection != null) {
 				doc.removeSelection(selection);
 				selection = null;
@@ -159,14 +152,23 @@ public class myTextPanel extends JPanel
 			}
 
 			//repaint();
-		} else if(keyCode == e.VK_ENTER) {
+		} else if(keyCode == KeyEvent.VK_ENTER) {
 			if (doc.atRowEnd(caret.getPos())) {
-				doc.addRow(this.getGraphics());
+				doc.addRowAt(this.getGraphics(), caret.getPos().getRow() + 1);
 			}
 			else {
 				doc.newLine(this.getGraphics(), caret.getPos());
 			}
-		} else if(keyCode == e.VK_LEFT) {
+		} else if (keyCode == KeyEvent.VK_DELETE) {
+			if (selection != null) {
+				doc.removeSelection(selection);
+				selection = null;
+				//doc.remove(caret.getPos());
+			}else {
+				doc.remove_back(caret.getPos());
+			}
+
+		} else if(keyCode == KeyEvent.VK_LEFT) {
 			System.out.printf("(%d, %d)\n", caret.getRow(), caret.getOffset());
 			if (caret.getOffset() > 0) {
 				caret.setPos(caret.getRow(), caret.getOffset() - 1);
@@ -178,7 +180,7 @@ public class myTextPanel extends JPanel
 					repaint();
 				}
 			}
-		} else if(keyCode == e.VK_RIGHT) {
+		} else if(keyCode == KeyEvent.VK_RIGHT) {
 			if (caret.getOffset() < doc.getRow(caret.getRow()).getSize()) {
 				caret.setPos(caret.getRow(), caret.getOffset() + 1);
 				repaint();
@@ -188,7 +190,7 @@ public class myTextPanel extends JPanel
 					repaint();
 				}
 			}
-		} else if (keyCode == e.VK_UP) {
+		} else if (keyCode == KeyEvent.VK_UP) {
 			if (caret.getRow() > 0) {
 				Row row = doc.getRow(caret.getRow() - 1);
 				Pos pos = caret.getPos();
@@ -199,7 +201,7 @@ public class myTextPanel extends JPanel
 				System.out.printf("offset : %d\n", offset);
 				repaint();
 			}
-		} else if (keyCode == e.VK_DOWN) {
+		} else if (keyCode == KeyEvent.VK_DOWN) {
 			if (caret.getRow() < doc.getSize() - 1) {
 				Row row = doc.getRow(caret.getRow() + 1);
 				Pos pos = caret.getPos();
@@ -211,6 +213,15 @@ public class myTextPanel extends JPanel
 				System.out.printf("offset : %d\n", offset);
 				repaint();
 			}
+		} else if (keyCode == KeyEvent.VK_F && e.isControlDown()) {
+			String str = JOptionPane.showInputDialog("请输入要搜索的字符串：");
+			ArrayList<Pair<Pos, Pos>> results = doc.find(str);
+			System.out.println("<---搜索结果--->");
+			for (Pair<Pos, Pos> result : results) {
+				System.out.println(result.fst + " -> " + result.snd);
+			}
+		} else if (this.getFont().canDisplay(e.getKeyChar())) {
+			doc.addChara(this.getGraphics(), e.getKeyChar(), caret.getPos());
 		}
 
 	}
@@ -318,12 +329,6 @@ public class myTextPanel extends JPanel
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		selection = null;
-		System.out.printf("Mouse %d %d\n", e.getX(), e.getY());
-		Pos pos = doc.getPos(e.getPoint());
-		System.out.printf("Mouse pos : %d %d", pos.getRow(), pos.getOffset());
-		caret.setPos(pos);
-		repaint();
 		if (e.getButton() == e.BUTTON3) {
 			JPopupMenu popup = new JPopupMenu();
 			JMenuItem item = new JMenuItem("Copy");
@@ -338,7 +343,12 @@ public class myTextPanel extends JPanel
 			popup.show(this, (int) p.getX(), (int) p.getY());
 		}
 		else if (e.getButton() == e.BUTTON1){
-
+			selection = null;
+			System.out.printf("Mouse %d %d\n", e.getX(), e.getY());
+			Pos pos = doc.getPos(e.getPoint());
+			System.out.printf("Mouse pos : %d %d", pos.getRow(), pos.getOffset());
+			caret.setPos(pos);
+			repaint();
 		}
 
 

@@ -4,6 +4,11 @@ import java.awt.*;
 
 /**
  * Created by EdwardZhu on 14-2-22.
+ *
+ * Pos
+ * --------------------------
+ * 位置表示类
+ *
  */
 public class Pos {
 	int row, offset;
@@ -52,7 +57,7 @@ public class Pos {
 
 	@Override
 	public String toString() {
-		return "Pos row:" + row + " offset: " + offset;
+		return "[" + row + " , " + offset + "]";
 	}
 
 	public static boolean formerThan(Pos p1, Pos p2) {

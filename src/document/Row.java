@@ -1,10 +1,17 @@
 package document;
 
+import com.sun.tools.javac.util.Pair;
+
 import java.awt.*;
 import java.util.*;
 
 /**
  * Created by EdwardZhu on 14-2-22.
+ *
+ * Row
+ * --------------------------
+ * 行
+ *
  */
 
 public class Row extends Glyph {
@@ -60,7 +67,9 @@ public class Row extends Glyph {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		//g.drawRect((int)bound.getX(), (int)bound.getY(), (int)bound.getWidth(), (int)bound.getHeight());
+		g.setColor(new Color(83, 174, 35, 97));
+		g.drawRect((int)bound.getX(), (int)bound.getY(), (int)bound.getWidth(), (int)bound.getHeight());
+		g.setColor(Color.BLACK);
 	}
 
 	int getOffsetWidth(int offset) {
@@ -83,8 +92,8 @@ public class Row extends Glyph {
 	}
 
 	public Chara add(Graphics g, char c) throws RowOutOfRoomException {
-
-		FontMetrics fm = g.getFontMetrics();
+		return add(g, c, this.getSize());
+		/*FontMetrics fm = g.getFontMetrics();
 		int height = (int)getBound().getHeight();
 		int width = fm.charWidth(c);
 		System.out.println("charWidth = " + String.valueOf(width) + " rowWidth = " + String.valueOf(bound.getWidth()));
@@ -99,7 +108,7 @@ public class Row extends Glyph {
 		super.add(chara);
 		System.out.println("x = " + String.valueOf(x) + " y = " + String.valueOf(y));
 		System.out.println("bound -> " + bound.toString());
-		return chara;
+		return chara;*/
 	}
 
 	public Chara add(Graphics g, char c, int offset) throws RowOutOfRoomException {
@@ -237,15 +246,34 @@ public class Row extends Glyph {
 	}
 
 	public String getString() {
-		String s = "";
+		StringBuffer sb = new StringBuffer();
 		for (Glyph child : children) {
-			s += ((Chara)child).c;
+			sb.append(((Chara)child).c);
 		}
-		return s;
+		return sb.toString();
 	}
 
 	public String getString(int offset) {
 		return getString().substring(offset);
+	}
+
+	public ArrayList<Pair<Pos, Pos>> find(String str, int row, int from, int to) {
+		ArrayList<Pair<Pos, Pos>> results = new ArrayList<Pair<Pos, Pos>>();
+		System.out.println("finding : " + from + " ->" + to);
+		int pos = 0, next;
+		String rowStr = getString().substring(from, to);
+		while((next = rowStr.indexOf(str, pos)) != -1) {
+			Pos p1 = new Pos(row, from + next);
+			Pos p2 = new Pos(row, from + next + str.length() - 1);
+			results.add(new Pair<Pos, Pos>(p1, p2));
+			pos = next + str.length();
+
+		}
+		return results;
+	}
+
+	public ArrayList<Pair<Pos, Pos>> find(String str, int row) {
+		return find(str, row, 0, this.getSize());
 	}
 
 }
